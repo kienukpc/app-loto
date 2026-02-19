@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
+    <!-- Background music -->
+    <audio id="bg-music" src="/music/remix.mp3" loop preload="auto"></audio>
+
     <!-- ============================== -->
     <!-- SCREEN: HOME                   -->
     <!-- ============================== -->
@@ -27,53 +30,63 @@
         </div>
 
         <div class="home-actions">
-          <!-- Create Room -->
-          <div class="action-card">
-            <h2>🏠 Tạo phòng</h2>
-            <div class="form-group">
-              <label for="host-name">Tên của bạn</label>
-              <input
-                type="text"
-                id="host-name"
-                placeholder="Nhập tên..."
-                maxlength="20"
-                autocomplete="off"
-              />
-            </div>
-            <div class="form-group">
-              <label>Số vé mỗi người</label>
-              <div class="ticket-selector">
-                <button class="ticket-btn" data-count="1">1</button>
-                <button class="ticket-btn" data-count="2">2</button>
-                <button class="ticket-btn active" data-count="3">3</button>
-                <button class="ticket-btn" data-count="4">4</button>
-                <button class="ticket-btn" data-count="5">5</button>
+          <button
+            class="btn btn-primary btn-create-toggle"
+            id="btn-show-create"
+          >
+            🏠 Tạo phòng mới
+          </button>
+
+          <div
+            class="create-room-form"
+            id="create-room-form"
+            style="display: none"
+          >
+            <div class="action-card">
+              <div class="form-group">
+                <label for="host-name">Tên của bạn</label>
+                <input
+                  type="text"
+                  id="host-name"
+                  placeholder="Nhập tên..."
+                  maxlength="20"
+                  autocomplete="off"
+                />
               </div>
-            </div>
-            <div class="form-group">
-              <label>Thời gian quay số</label>
-              <div class="ticket-selector">
-                <button class="spin-btn" data-spin="1">1s</button>
-                <button class="spin-btn" data-spin="2">2s</button>
-                <button class="spin-btn active" data-spin="3">3s</button>
-                <button class="spin-btn" data-spin="5">5s</button>
+              <div class="form-group">
+                <label>Số vé mỗi người</label>
+                <div class="ticket-selector">
+                  <button class="ticket-btn" data-count="1">1</button>
+                  <button class="ticket-btn" data-count="2">2</button>
+                  <button class="ticket-btn active" data-count="3">3</button>
+                  <button class="ticket-btn" data-count="4">4</button>
+                  <button class="ticket-btn" data-count="5">5</button>
+                </div>
               </div>
+              <div class="form-group">
+                <label>Thời gian quay số</label>
+                <div class="ticket-selector">
+                  <button class="spin-btn" data-spin="1">1s</button>
+                  <button class="spin-btn" data-spin="2">2s</button>
+                  <button class="spin-btn active" data-spin="3">3s</button>
+                  <button class="spin-btn" data-spin="5">5s</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="host-plays" checked />
+                  <span class="checkmark"></span>
+                  Host cũng chơi
+                </label>
+              </div>
+              <button class="btn btn-primary" id="btn-create">Tạo phòng</button>
             </div>
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input type="checkbox" id="host-plays" checked />
-                <span class="checkmark"></span>
-                Host cũng chơi
-              </label>
-            </div>
-            <button class="btn btn-primary" id="btn-create">Tạo phòng</button>
           </div>
 
           <div class="divider"><span>Phòng đang mở</span></div>
 
           <!-- Room Browser -->
           <div class="action-card" id="card-rooms">
-            <h2>🎮 Tham gia</h2>
             <div class="form-group">
               <label for="player-name">Tên của bạn</label>
               <input
@@ -102,12 +115,30 @@
     <div id="screen-lobby" class="screen">
       <div class="lobby-container">
         <div class="room-header">
-          <div class="room-code-display">
+          <div class="room-code-display" style="display: none">
             <span class="label">Mã phòng</span>
             <span class="code" id="lobby-room-code">----</span>
           </div>
           <div class="room-info" id="lobby-info"></div>
         </div>
+
+        <!-- Lobby name change -->
+        <div class="lobby-name-change">
+          <label>Tên của bạn:</label>
+          <div class="name-change-row">
+            <input
+              type="text"
+              id="lobby-name-input"
+              placeholder="Đổi tên..."
+              maxlength="20"
+              autocomplete="off"
+            />
+            <button class="btn btn-secondary btn-sm" id="btn-change-name">
+              Đổi
+            </button>
+          </div>
+        </div>
+
         <div class="players-section">
           <h3>👥 Người chơi (<span id="player-count">0</span>)</h3>
           <ul id="player-list"></ul>
@@ -115,6 +146,13 @@
         <div id="lobby-host-actions" class="host-actions" style="display: none">
           <button class="btn btn-primary btn-large" id="btn-start">
             🎲 Bắt đầu chơi!
+          </button>
+          <button
+            class="btn btn-danger"
+            id="btn-disband"
+            style="margin-top: 10px"
+          >
+            🚪 Giải tán phòng
           </button>
         </div>
         <div id="lobby-player-msg" class="waiting-msg" style="display: none">
@@ -131,27 +169,55 @@
       <div class="game-container">
         <!-- Top bar -->
         <div class="game-topbar">
-          <div class="room-badge" id="game-room-code">----</div>
+          <div class="room-badge" id="game-room-code" style="display: none">
+            ----
+          </div>
           <div class="drawn-counter"><span id="drawn-count">0</span>/90</div>
-          <button class="btn-icon" id="btn-menu" title="Menu">☰</button>
+          <div class="topbar-right">
+            <label class="reminder-toggle" title="Nhắc khi ra số của bạn">
+              <input type="checkbox" id="toggle-reminder" />
+              <span class="reminder-icon">🔔</span>
+            </label>
+            <button class="btn-icon" id="btn-toggle-music" title="Tắt/Bật nhạc">
+              🔊
+            </button>
+            <button class="btn-icon" id="btn-menu" title="Menu">☰</button>
+          </div>
         </div>
 
-        <!-- Drawn numbers (only shows drawn ones) -->
+        <!-- Drawn numbers -->
         <div class="drawn-numbers-section">
           <h4>Số đã ra (<span id="drawn-total">0</span>)</h4>
           <div class="drawn-list" id="drawn-list"></div>
         </div>
 
-        <!-- Player tickets (scrollable) -->
+        <!-- Player tickets -->
         <div id="player-tickets" style="display: none">
-          <h4 class="tickets-header">🎫 Vé của bạn</h4>
-          <div class="tickets-scroll" id="tickets-scroll"></div>
-          <div class="player-actions-row">
-            <button class="btn btn-near-loto" id="btn-near-loto">
-              ⚠️ Sắp Lô Tô
-            </button>
-            <button class="btn btn-loto" id="btn-claim">🎉 HÔ LÔ TÔ!</button>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 12px;
+            "
+          >
+            <h4 class="tickets-header" style="margin: 0">🎫 Vé của bạn</h4>
+            <label class="auto-fill-toggle" title="Tự động đánh số khi có">
+              <input type="checkbox" id="toggle-auto-fill" />
+              <span
+                style="
+                  font-size: 14px;
+                  color: var(--accent-gold);
+                  font-weight: 600;
+                "
+                >⚡ Auto Fill</span
+              >
+            </label>
           </div>
+          <div class="tickets-scroll" id="tickets-scroll"></div>
+          <button class="btn btn-near-loto" id="btn-near-loto">
+            ⚠️ Sắp Lô Tô
+          </button>
         </div>
       </div>
 
@@ -203,14 +269,14 @@
     </div>
 
     <!-- ============================== -->
-    <!-- OVERLAY: Loto Claim            -->
+    <!-- OVERLAY: Winner Celebration    -->
     <!-- ============================== -->
-    <div id="overlay-loto" class="overlay" style="display: none">
-      <div class="overlay-content loto-announcement">
-        <div class="loto-emoji">🎉🎊🎯</div>
-        <h2 id="loto-player-name">---</h2>
-        <p>hô LÔ TÔ!</p>
-        <button class="btn btn-primary" id="btn-close-loto">OK</button>
+    <div id="overlay-winner" class="overlay" style="display: none">
+      <div class="overlay-content winner-announcement">
+        <img class="winner-gif" id="winner-gif" src="" alt="Celebration" />
+        <h2 id="winner-name">---</h2>
+        <p class="winner-text">🎉 CHÚC MỪNG CHIẾN THẮNG! 🎉</p>
+        <button class="btn btn-primary" id="btn-close-winner">OK</button>
       </div>
     </div>
 

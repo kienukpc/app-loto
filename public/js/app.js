@@ -13,6 +13,8 @@ let state = {
   drawnNumbers: [],
   spinDuration: 3,
   isSpinning: false,
+  musicPlaying: false,
+  reminderEnabled: false,
 };
 
 // ============================================================
@@ -29,15 +31,18 @@ const screenGame = $("#screen-game");
 // Home
 const hostNameInput = $("#host-name");
 const playerNameInput = $("#player-name");
+const btnShowCreate = $("#btn-show-create");
+const createRoomForm = $("#create-room-form");
 const btnCreate = $("#btn-create");
 const hostPlaysCheckbox = $("#host-plays");
-const roomBrowser = $("#room-browser");
 const roomEmpty = $("#room-empty");
 const roomListItems = $("#room-list-items");
 
 // Lobby
 const lobbyRoomCode = $("#lobby-room-code");
 const lobbyInfo = $("#lobby-info");
+const lobbyNameInput = $("#lobby-name-input");
+const btnChangeName = $("#btn-change-name");
 const playerCount = $("#player-count");
 const playerList = $("#player-list");
 const lobbyHostActions = $("#lobby-host-actions");
@@ -51,6 +56,7 @@ const overlaySpin = $("#overlay-spin");
 const spinReel = $("#spin-reel");
 const spinNumber = $("#spin-number");
 const spinLabel = $("#spin-label");
+const spinNearLotoBanner = $("#spin-near-loto");
 const hostControls = $("#host-controls");
 const btnDraw = $("#btn-draw");
 const btnResetGame = $("#btn-reset-game");
@@ -58,18 +64,21 @@ const drawnList = $("#drawn-list");
 const drawnTotal = $("#drawn-total");
 const playerTickets = $("#player-tickets");
 const ticketsScroll = $("#tickets-scroll");
-const btnClaim = $("#btn-claim");
+const btnNearLoto = $("#btn-near-loto");
+const btnToggleMusic = $("#btn-toggle-music");
+const toggleReminder = $("#toggle-reminder");
+const toggleAutoFill = $("#toggle-auto-fill");
+const bgMusic = $("#bg-music");
 
 // Overlays
-const overlayLoto = $("#overlay-loto");
-const lotoPlayerName = $("#loto-player-name");
-const btnCloseLoto = $("#btn-close-loto");
 const overlayNearLoto = $("#overlay-near-loto");
 const nearLotoPlayer = $("#near-loto-player");
 const nearLotoNumbers = $("#near-loto-numbers");
 const btnCloseNearLoto = $("#btn-close-near-loto");
-const btnNearLoto = $("#btn-near-loto");
-const spinNearLotoBanner = $("#spin-near-loto");
+const overlayWinner = $("#overlay-winner");
+const winnerGif = $("#winner-gif");
+const winnerName = $("#winner-name");
+const btnCloseWinner = $("#btn-close-winner");
 const overlayBoard = $("#overlay-board");
 const numberBoard = $("#number-board");
 const btnNumberBoard = $("#btn-number-board");
@@ -86,6 +95,81 @@ function showScreen(screen) {
   $$(".screen").forEach((s) => s.classList.remove("active"));
   screen.classList.add("active");
 }
+
+// ============================================================
+// MUSIC CONTROLS
+// ============================================================
+function startMusic() {
+  bgMusic.volume = 0.4;
+  bgMusic
+    .play()
+    .then(() => {
+      state.musicPlaying = true;
+      btnToggleMusic.textContent = "🔊";
+    })
+    .catch(() => {
+      // Autoplay blocked – user needs to interact first
+      state.musicPlaying = false;
+      btnToggleMusic.textContent = "🔇";
+    });
+}
+
+function stopMusic() {
+  bgMusic.pause();
+  state.musicPlaying = false;
+  btnToggleMusic.textContent = "🔇";
+}
+
+btnToggleMusic.addEventListener("click", () => {
+  if (state.musicPlaying) {
+    stopMusic();
+  } else {
+    startMusic();
+  }
+});
+
+// ============================================================
+// REMINDER TOGGLE
+// ============================================================
+toggleReminder.addEventListener("change", () => {
+  state.reminderEnabled = toggleReminder.checked;
+  if (state.reminderEnabled) {
+    showToast("🔔 Đã bật nhắc nhở khi ra số của bạn", "success");
+  } else {
+    showToast("🔕 Đã tắt nhắc nhở", "");
+  }
+});
+
+// ============================================================
+// AUTO FILL TOGGLE
+// ============================================================
+if (toggleAutoFill) {
+  toggleAutoFill.addEventListener("change", () => {
+    state.autoFillEnabled = toggleAutoFill.checked;
+    if (state.autoFillEnabled) {
+      showToast("⚡ Đã bật tự động đánh số", "success");
+    } else {
+      showToast("Đã tắt tự động đánh số", "");
+    }
+  });
+}
+
+// ============================================================
+// HOME - CREATE ROOM TOGGLE
+// ============================================================
+btnShowCreate.addEventListener("click", () => {
+  if (createRoomForm.style.display === "none") {
+    createRoomForm.style.display = "block";
+    btnShowCreate.textContent = "✕ Đóng";
+    btnShowCreate.classList.add("btn-secondary");
+    btnShowCreate.classList.remove("btn-primary");
+  } else {
+    createRoomForm.style.display = "none";
+    btnShowCreate.textContent = "🏠 Tạo phòng mới";
+    btnShowCreate.classList.remove("btn-secondary");
+    btnShowCreate.classList.add("btn-primary");
+  }
+});
 
 // ============================================================
 // SELECTORS (Ticket count & Spin duration)
@@ -141,6 +225,7 @@ socket.on(
       (hostPlays ? " · <strong>Host chơi</strong>" : "");
     lobbyHostActions.style.display = "block";
     lobbyPlayerMsg.style.display = "none";
+    lobbyNameInput.value = hostNameInput.value.trim() || "Host";
 
     showScreen(screenLobby);
   },
@@ -154,7 +239,6 @@ socket.on("room-list", ({ rooms }) => {
 });
 
 function renderRoomList(rooms) {
-  // Filter to only waiting rooms
   const waitingRooms = rooms.filter((r) => r.status === "waiting");
 
   if (waitingRooms.length === 0) {
@@ -186,7 +270,6 @@ function renderRoomList(rooms) {
     )
     .join("");
 
-  // Add click handlers
   roomListItems.querySelectorAll(".room-item").forEach((item) => {
     item.addEventListener("click", () => {
       const code = item.dataset.code;
@@ -212,11 +295,22 @@ socket.on(
     lobbyInfo.innerHTML = `${ticketsPerPlayer} vé/người · Host: ${hostName}`;
     lobbyHostActions.style.display = "none";
     lobbyPlayerMsg.style.display = "block";
+    lobbyNameInput.value = playerNameInput.value.trim() || "Player";
 
     updatePlayerList(players);
     showScreen(screenLobby);
   },
 );
+
+// ============================================================
+// LOBBY NAME CHANGE
+// ============================================================
+btnChangeName.addEventListener("click", () => {
+  const newName = lobbyNameInput.value.trim();
+  if (!newName) return;
+  socket.emit("change-name", { newName });
+  showToast(`✅ Đã đổi tên thành ${newName}`, "success");
+});
 
 // ============================================================
 // PLAYER LIST
@@ -245,7 +339,20 @@ btnStart.addEventListener("click", () => {
 socket.on("game-started", () => {
   initGameScreen();
   showScreen(screenGame);
+  startMusic();
 });
+
+// ============================================================
+// DISBAND ROOM
+// ============================================================
+const btnDisband = $("#btn-disband");
+if (btnDisband) {
+  btnDisband.addEventListener("click", () => {
+    socket.emit("disband-room");
+    showToast("🚪 Đang giải tán phòng...", "error");
+    setTimeout(() => location.reload(), 1500);
+  });
+}
 
 // ============================================================
 // GAME INIT
@@ -257,10 +364,8 @@ function initGameScreen() {
   state.drawnNumbers = [];
   drawnList.innerHTML = "";
 
-  // Show host controls
   if (state.isHost) {
     hostControls.style.display = "block";
-    // Add padding to game container for sticky bar
     document
       .querySelector(".game-container")
       .classList.add("has-sticky-controls");
@@ -271,7 +376,6 @@ function initGameScreen() {
       .classList.remove("has-sticky-controls");
   }
 
-  // Show tickets if player, or if host plays
   if (state.tickets.length > 0) {
     playerTickets.style.display = "block";
     renderAllTickets();
@@ -290,22 +394,20 @@ btnDraw.addEventListener("click", () => {
 
 socket.on(
   "number-drawn",
-  ({ number, drawnNumbers, remaining, spinDuration, nearLotoMatch }) => {
-    state.drawnNumbers = drawnNumbers;
+  ({ number, drawnNumbers, remaining, spinDuration, dramaticSpin }) => {
     state.isSpinning = true;
-
-    // Disable draw button during spin
     btnDraw.disabled = true;
 
-    // Show spin overlay popup for ALL clients
+    // Prepare spin overlay
     spinNumber.textContent = "?";
     spinLabel.textContent = "Đang quay...";
     spinLabel.classList.remove("highlight");
     spinReel.classList.remove("spinning", "revealing");
 
-    // Show near-loto banner if applicable
-    if (nearLotoMatch) {
-      spinNearLotoBanner.textContent = `⚠️ ${nearLotoMatch.playerName} sắp LÔ TÔ!`;
+    // Show near-loto banner if dramatic
+    if (dramaticSpin) {
+      const names = dramaticSpin.playerNames.join(" & ");
+      spinNearLotoBanner.textContent = `⚠️ ${names} sắp LÔ TÔ! Hàng ${dramaticSpin.sharedTens}x`;
       spinNearLotoBanner.style.display = "block";
     } else {
       spinNearLotoBanner.style.display = "none";
@@ -313,10 +415,9 @@ socket.on(
 
     overlaySpin.style.display = "flex";
 
-    if (nearLotoMatch) {
+    if (dramaticSpin) {
       // === DRAMATIC TWO-PHASE SPIN ===
-      const tens = Math.floor(number / 10); // 0-9
-      const units = number % 10; // 0-9
+      const tens = dramaticSpin.sharedTens;
 
       // Phase 1: Quick spin, reveal tens digit
       spinReel.classList.add("spinning");
@@ -328,22 +429,19 @@ socket.on(
         () => {
           clearInterval(shuffle1);
           spinReel.classList.remove("spinning");
-          // Show tens digit with underscore
           spinNumber.textContent = tens > 0 ? tens + "_" : "0_";
-          spinLabel.textContent = `Đã ra chữ số ${tens}...`;
+          spinLabel.textContent = `Chữ số đầu: ${tens}...`;
 
-          // Phase 2: Slow dramatic spin for units digit
+          // Phase 2: Slow dramatic spin for units digit after 1s pause
           setTimeout(() => {
             spinReel.classList.add("spinning");
-            let counter = 0;
             const shuffle2 = setInterval(() => {
               const randUnit = Math.floor(Math.random() * 10);
               spinNumber.textContent =
                 tens > 0 ? tens + "" + randUnit : "0" + randUnit;
-              counter++;
-            }, 150); // Slower shuffle for suspense
+            }, 200);
 
-            // Final reveal after extended duration
+            // Final reveal after 5 seconds
             setTimeout(() => {
               clearInterval(shuffle2);
               spinReel.classList.remove("spinning");
@@ -352,18 +450,17 @@ socket.on(
               spinLabel.textContent = `Số ${number}!`;
               spinLabel.classList.add("highlight");
 
-              // Close overlay and update
               setTimeout(() => {
                 overlaySpin.style.display = "none";
                 spinReel.classList.remove("revealing");
                 spinNearLotoBanner.style.display = "none";
                 updateAfterDraw(number, drawnNumbers);
               }, 1200);
-            }, spinDuration * 1000); // Second phase takes full spin duration
-          }, 500); // Brief pause between phases
+            }, 5000);
+          }, 1000);
         },
         Math.max(spinDuration * 500, 1000),
-      ); // First phase is shorter
+      );
     } else {
       // === NORMAL SPIN ===
       spinReel.classList.add("spinning");
@@ -390,27 +487,102 @@ socket.on(
 );
 
 function updateAfterDraw(number, drawnNumbers) {
-  // Update counter
+  state.drawnNumbers = drawnNumbers;
+  state.isSpinning = false;
+  if (state.isHost) btnDraw.disabled = false;
+
   drawnCount.textContent = drawnNumbers.length;
   drawnTotal.textContent = drawnNumbers.length;
 
-  // Add chip to drawn list
   const chip = document.createElement("span");
   chip.className = "drawn-chip";
   chip.textContent = number;
   drawnList.appendChild(chip);
 
-  // Update tickets
-  if (state.tickets.length > 0) {
-    renderAllTickets();
+  // AUTO FILL LOGIC
+  if (state.autoFillEnabled && state.tickets.length > 0) {
+    state.tickets.forEach((ticket, tIdx) => {
+      let hasNumber = false;
+      for (let r = 0; r < 3; r++) {
+        if (ticket[r].includes(number)) hasNumber = true;
+      }
+
+      if (hasNumber) {
+        const marked = state.markedNumbers[tIdx];
+        if (!marked.has(number)) {
+          toggleNumber(tIdx, number);
+          showToast(`⚡ Auto: Đã đánh số ${number}`, "success");
+        }
+      }
+    });
   }
 
-  state.isSpinning = false;
-  btnDraw.disabled = false;
+  // Check if drawn number is on player's ticket AND not marked → miss reminder
+  if (state.tickets.length > 0 && state.reminderEnabled) {
+    // Check for missed numbers from PREVIOUS draws (not current one)
+    const previousDrawn = drawnNumbers.slice(0, -1);
+    let missedNumbers = [];
+    state.tickets.forEach((ticket, tIdx) => {
+      const marked = state.markedNumbers[tIdx];
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 9; col++) {
+          const n = ticket[row][col];
+          if (n !== 0 && previousDrawn.includes(n) && !marked.has(n)) {
+            if (!missedNumbers.includes(n)) {
+              missedNumbers.push(n);
+            }
+          }
+        }
+      }
+    });
+
+    if (missedNumbers.length > 0) {
+      showToast(
+        `⚠️ Sót số: ${missedNumbers.join(", ")} kìa, lêu lêu!`,
+        "warning",
+      );
+    }
+
+    // Also notify about current number being on their ticket
+    let currentOnTicket = false;
+    state.tickets.forEach((ticket) => {
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (ticket[row][col] === number) {
+            currentOnTicket = true;
+          }
+        }
+      }
+    });
+    if (currentOnTicket) {
+      showToast(`🔔 Số ${number} có trong vé của bạn!`, "success");
+    }
+  }
+
+  // Always re-render to update "is-drawn" styles
+  renderAllTickets();
+
+  // Auto-Win Check (catch cases where user pre-marked the winning number)
+  const drawnSet = new Set(state.drawnNumbers);
+  for (let tIdx = 0; tIdx < state.tickets.length; tIdx++) {
+    const ticket = state.tickets[tIdx];
+    const tMarked = state.markedNumbers[tIdx];
+    for (let row = 0; row < 3; row++) {
+      const numbersInRow = ticket[row].filter((n) => n !== 0);
+      if (numbersInRow.length === 0) continue;
+      const allComplete = numbersInRow.every(
+        (n) => drawnSet.has(n) && tMarked.has(n),
+      );
+      if (allComplete) {
+        socket.emit("claim-loto", { ticketIndex: tIdx });
+        return; // Only claim once
+      }
+    }
+  }
 }
 
 // ============================================================
-// TICKET RENDERING (scrollable, all tickets visible)
+// TICKET RENDERING
 // ============================================================
 function renderAllTickets() {
   ticketsScroll.innerHTML = "";
@@ -419,7 +591,6 @@ function renderAllTickets() {
     const card = document.createElement("div");
     card.className = "ticket-card";
 
-    // Label
     if (state.tickets.length > 1) {
       const label = document.createElement("div");
       label.className = "ticket-label";
@@ -427,7 +598,6 @@ function renderAllTickets() {
       card.appendChild(label);
     }
 
-    // Ticket
     const ticketEl = document.createElement("div");
     ticketEl.className = "ticket";
 
@@ -482,6 +652,24 @@ function toggleNumber(ticketIndex, number) {
 
   socket.emit("toggle-number", { ticketIndex, number });
   renderAllTickets();
+
+  // Auto-win check: if any row in any ticket has all numbers drawn AND marked → claim loto
+  const drawnSet = new Set(state.drawnNumbers);
+  for (let tIdx = 0; tIdx < state.tickets.length; tIdx++) {
+    const ticket = state.tickets[tIdx];
+    const tMarked = state.markedNumbers[tIdx];
+    for (let row = 0; row < 3; row++) {
+      const numbersInRow = ticket[row].filter((n) => n !== 0);
+      if (numbersInRow.length === 0) continue;
+      const allComplete = numbersInRow.every(
+        (n) => drawnSet.has(n) && tMarked.has(n),
+      );
+      if (allComplete) {
+        socket.emit("claim-loto", { ticketIndex: tIdx });
+        return; // Only claim once
+      }
+    }
+  }
 }
 
 // ============================================================
@@ -522,7 +710,6 @@ function renderNumberBoard() {
 btnNearLoto.addEventListener("click", () => {
   if (state.tickets.length === 0) return;
 
-  // Find the best row (fewest missing numbers from drawn set, max 3)
   const drawnSet = new Set(state.drawnNumbers);
   let bestRow = null;
 
@@ -551,68 +738,81 @@ btnNearLoto.addEventListener("click", () => {
   showToast(`⚠️ Đã báo sắp Lô Tô! Còn ${bestRow.missing.length} số`, "warning");
 });
 
-socket.on(
-  "near-loto-declared",
-  ({ playerName, missingNumbers, ticketIndex }) => {
-    nearLotoPlayer.textContent = playerName;
-    nearLotoNumbers.innerHTML = missingNumbers
-      .map((n) => `<div class="near-loto-num">${n}</div>`)
-      .join("");
-    overlayNearLoto.style.display = "flex";
+socket.on("near-loto-declared", ({ playerName, missingNumbers }) => {
+  nearLotoPlayer.textContent = playerName;
+  nearLotoNumbers.innerHTML = missingNumbers
+    .map((n) => `<div class="near-loto-num">${n}</div>`)
+    .join("");
+  overlayNearLoto.style.display = "flex";
 
-    // Auto-close after 4 seconds
-    setTimeout(() => {
-      overlayNearLoto.style.display = "none";
-    }, 4000);
-  },
-);
+  setTimeout(() => {
+    overlayNearLoto.style.display = "none";
+  }, 4000);
+});
 
 btnCloseNearLoto.addEventListener("click", () => {
   overlayNearLoto.style.display = "none";
 });
 
-// ============================================================
-// CLAIM LOTO
-// ============================================================
-btnClaim.addEventListener("click", () => {
-  socket.emit("claim-loto", { ticketIndex: 0 });
-});
-
-socket.on("loto-claimed", ({ playerName }) => {
-  lotoPlayerName.textContent = playerName;
-  overlayLoto.style.display = "flex";
-});
-
-btnCloseLoto.addEventListener("click", () => {
-  overlayLoto.style.display = "none";
+// Near-loto nudge: server detected player has 1 number left but didn't declare
+socket.on("near-loto-nudge", ({ playerName, missingNumber }) => {
+  showToast(
+    `Ê ${playerName} thiếu số ${missingNumber} sắp lô tô mà không báo kìa!`,
+    "warning",
+  );
 });
 
 // ============================================================
-// RESET GAME
+// GAME WON (winner celebration)
+// ============================================================
+const celebrationGifs = ["/gif/giphy.gif", "/gif/giphy (1).gif"];
+
+socket.on("game-won", ({ playerName }) => {
+  const gif =
+    celebrationGifs[Math.floor(Math.random() * celebrationGifs.length)];
+  winnerGif.src = gif;
+  winnerName.textContent = playerName;
+  overlayWinner.style.display = "flex";
+  btnDraw.disabled = true;
+  stopMusic();
+});
+
+btnCloseWinner.addEventListener("click", () => {
+  overlayWinner.style.display = "none";
+});
+
+// ============================================================
+// RESET GAME (back to lobby)
 // ============================================================
 btnResetGame.addEventListener("click", () => {
-  if (confirm("Bắt đầu ván mới? Vé mới sẽ được phát.")) {
-    socket.emit("reset-game");
-  }
+  socket.emit("reset-game");
+  showToast("🔄 Đang tạo ván mới...", "success");
 });
 
-socket.on("game-reset", () => {
+socket.on("back-to-lobby", ({ code, players }) => {
   state.drawnNumbers = [];
-  drawnCount.textContent = "0";
-  drawnTotal.textContent = "0";
-  drawnList.innerHTML = "";
+  overlayWinner.style.display = "none";
+  btnDraw.disabled = false;
+  stopMusic();
 
-  if (state.tickets.length > 0) {
-    renderAllTickets();
+  // Reset UI for lobby
+  lobbyRoomCode.textContent = code;
+  if (state.isHost) {
+    lobbyHostActions.style.display = "block";
+    lobbyPlayerMsg.style.display = "none";
+  } else {
+    lobbyHostActions.style.display = "none";
+    lobbyPlayerMsg.style.display = "block";
   }
 
-  showToast("🔄 Ván mới!", "success");
+  updatePlayerList(players);
+  showScreen(screenLobby);
+  showToast("🔄 Ván mới! Chờ trong phòng chờ...", "success");
 });
 
 socket.on("tickets-refreshed", ({ tickets }) => {
   state.tickets = tickets;
   state.markedNumbers = tickets.map(() => new Set());
-  renderAllTickets();
 });
 
 // ============================================================
@@ -646,6 +846,7 @@ socket.on("error-msg", ({ message }) => {
 
 socket.on("room-closed", ({ message }) => {
   showToast(message, "error");
+  stopMusic();
   setTimeout(() => location.reload(), 2000);
 });
 

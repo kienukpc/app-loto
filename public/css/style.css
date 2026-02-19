@@ -90,6 +90,14 @@ body {
   margin-bottom: 16px;
 }
 
+/* Create room toggle button */
+.btn-create-toggle {
+  width: 100%;
+  padding: 16px;
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
 .action-card h2 {
   font-family: var(--font-display);
   font-size: 18px;
@@ -426,6 +434,46 @@ input[type="text"]:focus { border-color: var(--accent-gold); }
   line-height: 1.6;
 }
 
+/* Lobby name change */
+.lobby-name-change {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.lobby-name-change label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.name-change-row {
+  display: flex;
+  gap: 8px;
+}
+
+.name-change-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.btn-sm {
+  width: auto !important;
+  flex-shrink: 0;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+}
+
 .players-section { margin-bottom: 28px; }
 
 .players-section h3 {
@@ -487,6 +535,31 @@ input[type="text"]:focus { border-color: var(--accent-gold); }
   justify-content: space-between;
   padding: 8px 4px;
   margin-bottom: 8px;
+  gap: 8px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reminder-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.reminder-toggle input { display: none; }
+
+.reminder-icon {
+  font-size: 20px;
+  opacity: 0.35;
+  transition: all 0.2s;
+}
+
+.reminder-toggle input:checked + .reminder-icon {
+  opacity: 1;
 }
 
 .room-badge {
@@ -823,58 +896,27 @@ input[type="text"]:focus { border-color: var(--accent-gold); }
 
 .ticket-cell.empty { background: transparent; }
 
-/* Player action buttons row */
-.player-actions-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  align-items: stretch;
-}
-
-/* Near Loto button */
+/* Near Loto button (standalone) */
 .btn-near-loto {
-  flex: 0 0 auto;
+  display: block;
+  width: 100%;
+  margin-top: 16px;
   padding: 12px 14px;
   background: transparent;
   color: var(--accent-orange);
   border: 2px solid var(--accent-orange);
   border-radius: var(--radius);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
   transition: all 0.2s;
-  white-space: nowrap;
 }
 
-.btn-near-loto:active { 
+.btn-near-loto:active {
   transform: scale(0.95);
   background: rgba(243, 156, 18, 0.1);
 }
-
-/* Loto button */
-.btn-loto {
-  flex: 1;
-  padding: 16px;
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 20px;
-  font-weight: 700;
-  font-family: var(--font-display);
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3);
-  transition: all 0.2s;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3); }
-  50% { box-shadow: 0 4px 28px rgba(231, 76, 60, 0.6); }
-}
-
-.btn-loto:active { transform: scale(0.95); }
 
 /* Near Loto announcement overlay */
 .near-loto-announcement {
@@ -939,6 +981,33 @@ input[type="text"]:focus { border-color: var(--accent-gold); }
   animation: pulseGlow 1s infinite;
 }
 
+/* Winner celebration overlay */
+.winner-announcement {
+  text-align: center;
+  animation: bounceIn 0.5s ease;
+  border-color: var(--accent-gold);
+}
+
+.winner-gif {
+  width: 200px;
+  height: auto;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+
+.winner-announcement h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+}
+
+.winner-text {
+  font-size: 18px;
+  color: var(--accent-orange);
+  font-weight: 600;
+  margin-bottom: 20px;
+}
 
 /* ============================================================
    OVERLAYS
