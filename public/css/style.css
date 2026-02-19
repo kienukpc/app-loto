@@ -828,25 +828,29 @@ input[type="text"]:focus { border-color: var(--accent-gold); }
   display: flex;
   gap: 8px;
   margin-top: 16px;
+  align-items: stretch;
 }
 
 /* Near Loto button */
 .btn-near-loto {
   flex: 0 0 auto;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, var(--accent-orange), #e67e22);
-  color: #fff;
-  border: none;
+  padding: 12px 14px;
+  background: transparent;
+  color: var(--accent-orange);
+  border: 2px solid var(--accent-orange);
   border-radius: var(--radius);
-  font-size: 14px;
-  font-weight: 700;
-  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
-.btn-near-loto:active { transform: scale(0.95); }
+.btn-near-loto:active { 
+  transform: scale(0.95);
+  background: rgba(243, 156, 18, 0.1);
+}
 
 /* Loto button */
 .btn-loto {
