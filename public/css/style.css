@@ -823,11 +823,35 @@ input[type="text"]:focus { border-color: var(--accent-gold); }
 
 .ticket-cell.empty { background: transparent; }
 
+/* Player action buttons row */
+.player-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Near Loto button */
+.btn-near-loto {
+  flex: 0 0 auto;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--accent-orange), #e67e22);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-near-loto:active { transform: scale(0.95); }
+
 /* Loto button */
 .btn-loto {
-  width: 100%;
+  flex: 1;
   padding: 16px;
-  margin-top: 16px;
   background: linear-gradient(135deg, #e74c3c, #c0392b);
   color: white;
   border: none;
@@ -847,6 +871,70 @@ input[type="text"]:focus { border-color: var(--accent-gold); }
 }
 
 .btn-loto:active { transform: scale(0.95); }
+
+/* Near Loto announcement overlay */
+.near-loto-announcement {
+  animation: bounceIn 0.5s ease;
+  border-color: var(--accent-orange);
+}
+
+.near-loto-emoji { font-size: 40px; margin-bottom: 12px; }
+
+.near-loto-announcement h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--accent-orange);
+  margin-bottom: 4px;
+}
+
+.near-loto-announcement p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.near-loto-numbers {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.near-loto-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--accent-orange), #e67e22);
+  color: #000;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  box-shadow: 0 0 16px rgba(243, 156, 18, 0.5);
+}
+
+.near-loto-sub {
+  font-size: 13px !important;
+  color: var(--text-muted) !important;
+  margin-bottom: 20px !important;
+}
+
+/* Spin near-loto banner (inside spin overlay) */
+.spin-near-loto {
+  background: rgba(243, 156, 18, 0.15);
+  border: 1px solid var(--accent-orange);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-orange);
+  animation: pulseGlow 1s infinite;
+}
+
 
 /* ============================================================
    OVERLAYS

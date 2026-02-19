@@ -146,7 +146,12 @@
         <div id="player-tickets" style="display: none">
           <h4 class="tickets-header">🎫 Vé của bạn</h4>
           <div class="tickets-scroll" id="tickets-scroll"></div>
-          <button class="btn btn-loto" id="btn-claim">🎉 HÔ LÔ TÔ!</button>
+          <div class="player-actions-row">
+            <button class="btn btn-near-loto" id="btn-near-loto">
+              ⚠️ Sắp Lô Tô
+            </button>
+            <button class="btn btn-loto" id="btn-claim">🎉 HÔ LÔ TÔ!</button>
+          </div>
         </div>
       </div>
 
@@ -171,10 +176,29 @@
     <!-- ============================== -->
     <div id="overlay-spin" class="overlay overlay-spin" style="display: none">
       <div class="overlay-content spin-popup">
+        <div
+          class="spin-near-loto"
+          id="spin-near-loto"
+          style="display: none"
+        ></div>
         <div class="spin-reel" id="spin-reel">
           <div class="spin-number" id="spin-number">?</div>
         </div>
         <div class="spin-label" id="spin-label">Đang quay...</div>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- OVERLAY: Near Loto Alert       -->
+    <!-- ============================== -->
+    <div id="overlay-near-loto" class="overlay" style="display: none">
+      <div class="overlay-content near-loto-announcement">
+        <div class="near-loto-emoji">⚠️🔥</div>
+        <h2 id="near-loto-player">---</h2>
+        <p>sắp LÔ TÔ!</p>
+        <div class="near-loto-numbers" id="near-loto-numbers"></div>
+        <p class="near-loto-sub">Số còn thiếu</p>
+        <button class="btn btn-primary" id="btn-close-near-loto">OK</button>
       </div>
     </div>
 

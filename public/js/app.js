@@ -64,6 +64,12 @@ const btnClaim = $("#btn-claim");
 const overlayLoto = $("#overlay-loto");
 const lotoPlayerName = $("#loto-player-name");
 const btnCloseLoto = $("#btn-close-loto");
+const overlayNearLoto = $("#overlay-near-loto");
+const nearLotoPlayer = $("#near-loto-player");
+const nearLotoNumbers = $("#near-loto-numbers");
+const btnCloseNearLoto = $("#btn-close-near-loto");
+const btnNearLoto = $("#btn-near-loto");
+const spinNearLotoBanner = $("#spin-near-loto");
 const overlayBoard = $("#overlay-board");
 const numberBoard = $("#number-board");
 const btnNumberBoard = $("#btn-number-board");
@@ -284,7 +290,7 @@ btnDraw.addEventListener("click", () => {
 
 socket.on(
   "number-drawn",
-  ({ number, drawnNumbers, remaining, spinDuration }) => {
+  ({ number, drawnNumbers, remaining, spinDuration, nearLotoMatch }) => {
     state.drawnNumbers = drawnNumbers;
     state.isSpinning = true;
 
@@ -296,51 +302,112 @@ socket.on(
     spinLabel.textContent = "Đang quay...";
     spinLabel.classList.remove("highlight");
     spinReel.classList.remove("spinning", "revealing");
+
+    // Show near-loto banner if applicable
+    if (nearLotoMatch) {
+      spinNearLotoBanner.textContent = `⚠️ ${nearLotoMatch.playerName} sắp LÔ TÔ!`;
+      spinNearLotoBanner.style.display = "block";
+    } else {
+      spinNearLotoBanner.style.display = "none";
+    }
+
     overlaySpin.style.display = "flex";
 
-    // Start spin animation
-    spinReel.classList.add("spinning");
+    if (nearLotoMatch) {
+      // === DRAMATIC TWO-PHASE SPIN ===
+      const tens = Math.floor(number / 10); // 0-9
+      const units = number % 10; // 0-9
 
-    // Shuffle random numbers while spinning
-    const shuffleInterval = setInterval(() => {
-      spinNumber.textContent = Math.floor(Math.random() * 90) + 1;
-    }, 80);
+      // Phase 1: Quick spin, reveal tens digit
+      spinReel.classList.add("spinning");
+      const shuffle1 = setInterval(() => {
+        spinNumber.textContent = Math.floor(Math.random() * 90) + 1;
+      }, 80);
 
-    // After spin duration, reveal the real number
-    setTimeout(() => {
-      clearInterval(shuffleInterval);
-      spinReel.classList.remove("spinning");
-      spinReel.classList.add("revealing");
-      spinNumber.textContent = number;
-      spinLabel.textContent = `Số ${number}!`;
-      spinLabel.classList.add("highlight");
+      setTimeout(
+        () => {
+          clearInterval(shuffle1);
+          spinReel.classList.remove("spinning");
+          // Show tens digit with underscore
+          spinNumber.textContent = tens > 0 ? tens + "_" : "0_";
+          spinLabel.textContent = `Đã ra chữ số ${tens}...`;
 
-      // After reveal animation, close overlay and update drawn list
+          // Phase 2: Slow dramatic spin for units digit
+          setTimeout(() => {
+            spinReel.classList.add("spinning");
+            let counter = 0;
+            const shuffle2 = setInterval(() => {
+              const randUnit = Math.floor(Math.random() * 10);
+              spinNumber.textContent =
+                tens > 0 ? tens + "" + randUnit : "0" + randUnit;
+              counter++;
+            }, 150); // Slower shuffle for suspense
+
+            // Final reveal after extended duration
+            setTimeout(() => {
+              clearInterval(shuffle2);
+              spinReel.classList.remove("spinning");
+              spinReel.classList.add("revealing");
+              spinNumber.textContent = number;
+              spinLabel.textContent = `Số ${number}!`;
+              spinLabel.classList.add("highlight");
+
+              // Close overlay and update
+              setTimeout(() => {
+                overlaySpin.style.display = "none";
+                spinReel.classList.remove("revealing");
+                spinNearLotoBanner.style.display = "none";
+                updateAfterDraw(number, drawnNumbers);
+              }, 1200);
+            }, spinDuration * 1000); // Second phase takes full spin duration
+          }, 500); // Brief pause between phases
+        },
+        Math.max(spinDuration * 500, 1000),
+      ); // First phase is shorter
+    } else {
+      // === NORMAL SPIN ===
+      spinReel.classList.add("spinning");
+      const shuffleInterval = setInterval(() => {
+        spinNumber.textContent = Math.floor(Math.random() * 90) + 1;
+      }, 80);
+
       setTimeout(() => {
-        overlaySpin.style.display = "none";
-        spinReel.classList.remove("revealing");
+        clearInterval(shuffleInterval);
+        spinReel.classList.remove("spinning");
+        spinReel.classList.add("revealing");
+        spinNumber.textContent = number;
+        spinLabel.textContent = `Số ${number}!`;
+        spinLabel.classList.add("highlight");
 
-        // Update counter
-        drawnCount.textContent = drawnNumbers.length;
-        drawnTotal.textContent = drawnNumbers.length;
-
-        // Add chip to drawn list
-        const chip = document.createElement("span");
-        chip.className = "drawn-chip";
-        chip.textContent = number;
-        drawnList.appendChild(chip);
-
-        // Update tickets
-        if (state.tickets.length > 0) {
-          renderAllTickets();
-        }
-
-        state.isSpinning = false;
-        btnDraw.disabled = false;
-      }, 1000);
-    }, spinDuration * 1000);
+        setTimeout(() => {
+          overlaySpin.style.display = "none";
+          spinReel.classList.remove("revealing");
+          updateAfterDraw(number, drawnNumbers);
+        }, 1000);
+      }, spinDuration * 1000);
+    }
   },
 );
+
+function updateAfterDraw(number, drawnNumbers) {
+  // Update counter
+  drawnCount.textContent = drawnNumbers.length;
+  drawnTotal.textContent = drawnNumbers.length;
+
+  // Add chip to drawn list
+  const chip = document.createElement("span");
+  chip.className = "drawn-chip";
+  chip.textContent = number;
+  drawnList.appendChild(chip);
+
+  // Update tickets
+  if (state.tickets.length > 0) {
+    renderAllTickets();
+  }
+
+  state.isSpinning = false;
+  btnDraw.disabled = false;
+}
 
 // ============================================================
 // TICKET RENDERING (scrollable, all tickets visible)
@@ -448,6 +515,61 @@ function renderNumberBoard() {
     numberBoard.appendChild(cell);
   }
 }
+
+// ============================================================
+// NEAR LOTO (Player declares)
+// ============================================================
+btnNearLoto.addEventListener("click", () => {
+  if (state.tickets.length === 0) return;
+
+  // Find the best row (fewest missing numbers from drawn set, max 3)
+  const drawnSet = new Set(state.drawnNumbers);
+  let bestRow = null;
+
+  state.tickets.forEach((ticket, tIdx) => {
+    ticket.forEach((row, rIdx) => {
+      const numbersInRow = row.filter((n) => n !== 0);
+      const missing = numbersInRow.filter((n) => !drawnSet.has(n));
+      if (missing.length >= 1 && missing.length <= 3) {
+        if (!bestRow || missing.length < bestRow.missing.length) {
+          bestRow = { ticketIndex: tIdx, rowIndex: rIdx, missing };
+        }
+      }
+    });
+  });
+
+  if (!bestRow) {
+    showToast("❌ Chưa có hàng nào sắp xong (cần còn tối đa 3 số)", "error");
+    return;
+  }
+
+  socket.emit("declare-near-loto", {
+    ticketIndex: bestRow.ticketIndex,
+    rowIndex: bestRow.rowIndex,
+  });
+
+  showToast(`⚠️ Đã báo sắp Lô Tô! Còn ${bestRow.missing.length} số`, "warning");
+});
+
+socket.on(
+  "near-loto-declared",
+  ({ playerName, missingNumbers, ticketIndex }) => {
+    nearLotoPlayer.textContent = playerName;
+    nearLotoNumbers.innerHTML = missingNumbers
+      .map((n) => `<div class="near-loto-num">${n}</div>`)
+      .join("");
+    overlayNearLoto.style.display = "flex";
+
+    // Auto-close after 4 seconds
+    setTimeout(() => {
+      overlayNearLoto.style.display = "none";
+    }, 4000);
+  },
+);
+
+btnCloseNearLoto.addEventListener("click", () => {
+  overlayNearLoto.style.display = "none";
+});
 
 // ============================================================
 // CLAIM LOTO
