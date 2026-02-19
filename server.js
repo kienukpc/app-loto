@@ -149,6 +149,7 @@ io.on("connection", (socket) => {
         spinDuration: Math.min(Math.max(parseFloat(spinDuration) || 3, 1), 10),
         players: new Map(),
         drawnNumbers: [],
+        nearLotoPlayers: new Map(), // playerId -> { playerName, missingNumbers: [num,...] }
         status: "waiting",
       };
 
@@ -290,11 +291,23 @@ io.on("connection", (socket) => {
       `[Room ${room.code}] Drew: ${drawn} (${room.drawnNumbers.length}/90)`,
     );
 
+    // Check if drawn number matches any declared near-loto number
+    let nearLotoMatch = null;
+    for (const [pid, info] of room.nearLotoPlayers) {
+      if (info.missingNumbers.includes(drawn)) {
+        nearLotoMatch = { playerName: info.playerName, number: drawn };
+        // Remove this player from near-loto since their number was drawn
+        room.nearLotoPlayers.delete(pid);
+        break;
+      }
+    }
+
     io.to(room.code).emit("number-drawn", {
       number: drawn,
       drawnNumbers: room.drawnNumbers,
       remaining: available.length - 1,
       spinDuration: room.spinDuration,
+      nearLotoMatch, // null or { playerName, number }
     });
   });
 
@@ -345,6 +358,7 @@ io.on("connection", (socket) => {
 
     room.drawnNumbers = [];
     room.status = "waiting";
+    room.nearLotoPlayers = new Map();
 
     for (const [id, player] of room.players) {
       const tickets = generateTickets(room.ticketsPerPlayer);
@@ -359,6 +373,48 @@ io.on("connection", (socket) => {
     io.to(room.code).emit("game-reset");
     console.log(`[Room ${room.code}] Game reset!`);
     broadcastRoomList();
+  });
+
+  // ----------------------------------------------------------
+  // DECLARE NEAR LOTO
+  // ----------------------------------------------------------
+  socket.on("declare-near-loto", ({ ticketIndex, rowIndex }) => {
+    const room = rooms.get(socket.roomCode);
+    if (!room) return;
+    const player = room.players.get(socket.id);
+    if (!player) return;
+    if (room.status !== "playing") return;
+
+    // Find missing numbers for the specified row
+    const ticket = player.tickets[ticketIndex];
+    if (!ticket) return;
+    const row = ticket[rowIndex];
+    if (!row) return;
+
+    const drawnSet = new Set(room.drawnNumbers);
+    const numbersInRow = row.filter((n) => n !== 0);
+    const missingNumbers = numbersInRow.filter((n) => !drawnSet.has(n));
+
+    if (missingNumbers.length === 0 || missingNumbers.length > 3) return;
+
+    // Store the near-loto declaration
+    room.nearLotoPlayers.set(socket.id, {
+      playerName: player.name,
+      missingNumbers,
+      ticketIndex,
+      rowIndex,
+    });
+
+    console.log(
+      `[Room ${room.code}] ⚠️ ${player.name} sắp lô tô! Còn: ${missingNumbers.join(", ")}`,
+    );
+
+    // Broadcast to all clients
+    io.to(room.code).emit("near-loto-declared", {
+      playerName: player.name,
+      missingNumbers,
+      ticketIndex: ticketIndex + 1,
+    });
   });
 
   // ----------------------------------------------------------
