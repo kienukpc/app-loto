@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>🎯 Lô Tô Online</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <!-- ============================== -->
+    <!-- SCREEN: HOME                   -->
+    <!-- ============================== -->
+    <div id="screen-home" class="screen active">
+      <div class="home-container">
+        <div class="logo-section">
+          <div class="logo-icon">🎯</div>
+          <h1 class="logo-title">LÔ TÔ</h1>
+          <p class="logo-subtitle">Chơi cùng bạn bè</p>
+        </div>
+
+        <div class="home-actions">
+          <!-- Create Room -->
+          <div class="action-card">
+            <h2>🏠 Tạo phòng</h2>
+            <div class="form-group">
+              <label for="host-name">Tên của bạn</label>
+              <input
+                type="text"
+                id="host-name"
+                placeholder="Nhập tên..."
+                maxlength="20"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-group">
+              <label>Số vé mỗi người</label>
+              <div class="ticket-selector">
+                <button class="ticket-btn" data-count="1">1</button>
+                <button class="ticket-btn" data-count="2">2</button>
+                <button class="ticket-btn active" data-count="3">3</button>
+                <button class="ticket-btn" data-count="4">4</button>
+                <button class="ticket-btn" data-count="5">5</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Thời gian quay số</label>
+              <div class="ticket-selector">
+                <button class="spin-btn" data-spin="1">1s</button>
+                <button class="spin-btn" data-spin="2">2s</button>
+                <button class="spin-btn active" data-spin="3">3s</button>
+                <button class="spin-btn" data-spin="5">5s</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="host-plays" checked />
+                <span class="checkmark"></span>
+                Host cũng chơi
+              </label>
+            </div>
+            <button class="btn btn-primary" id="btn-create">Tạo phòng</button>
+          </div>
+
+          <div class="divider"><span>Phòng đang mở</span></div>
+
+          <!-- Room Browser -->
+          <div class="action-card" id="card-rooms">
+            <h2>🎮 Tham gia</h2>
+            <div class="form-group">
+              <label for="player-name">Tên của bạn</label>
+              <input
+                type="text"
+                id="player-name"
+                placeholder="Nhập tên..."
+                maxlength="20"
+                autocomplete="off"
+              />
+            </div>
+            <div class="room-browser" id="room-browser">
+              <div class="room-empty" id="room-empty">
+                <p>😴 Chưa có phòng nào</p>
+                <p class="sub">Hãy tạo phòng đầu tiên!</p>
+              </div>
+              <div class="room-list-items" id="room-list-items"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- SCREEN: LOBBY                  -->
+    <!-- ============================== -->
+    <div id="screen-lobby" class="screen">
+      <div class="lobby-container">
+        <div class="room-header">
+          <div class="room-code-display">
+            <span class="label">Mã phòng</span>
+            <span class="code" id="lobby-room-code">----</span>
+          </div>
+          <div class="room-info" id="lobby-info"></div>
+        </div>
+        <div class="players-section">
+          <h3>👥 Người chơi (<span id="player-count">0</span>)</h3>
+          <ul id="player-list"></ul>
+        </div>
+        <div id="lobby-host-actions" class="host-actions" style="display: none">
+          <button class="btn btn-primary btn-large" id="btn-start">
+            🎲 Bắt đầu chơi!
+          </button>
+        </div>
+        <div id="lobby-player-msg" class="waiting-msg" style="display: none">
+          <div class="spinner"></div>
+          <p>Chờ host bắt đầu...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- SCREEN: GAME                   -->
+    <!-- ============================== -->
+    <div id="screen-game" class="screen">
+      <div class="game-container">
+        <!-- Top bar -->
+        <div class="game-topbar">
+          <div class="room-badge" id="game-room-code">----</div>
+          <div class="drawn-counter"><span id="drawn-count">0</span>/90</div>
+          <button class="btn-icon" id="btn-menu" title="Menu">☰</button>
+        </div>
+
+        <!-- Drawn numbers (only shows drawn ones) -->
+        <div class="drawn-numbers-section">
+          <h4>Số đã ra (<span id="drawn-total">0</span>)</h4>
+          <div class="drawn-list" id="drawn-list"></div>
+        </div>
+
+        <!-- Player tickets (scrollable) -->
+        <div id="player-tickets" style="display: none">
+          <h4 class="tickets-header">🎫 Vé của bạn</h4>
+          <div class="tickets-scroll" id="tickets-scroll"></div>
+          <button class="btn btn-loto" id="btn-claim">🎉 HÔ LÔ TÔ!</button>
+        </div>
+      </div>
+
+      <!-- Host controls (sticky bottom bar) -->
+      <div
+        id="host-controls"
+        class="host-controls-sticky"
+        style="display: none"
+      >
+        <button class="btn btn-draw" id="btn-draw">🎲 QUAY SỐ</button>
+        <div class="host-controls-row">
+          <button class="btn btn-board" id="btn-number-board">
+            📊 Bảng số
+          </button>
+          <button class="btn btn-reset" id="btn-reset-game">🔄 Ván mới</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- OVERLAY: Spin Animation        -->
+    <!-- ============================== -->
+    <div id="overlay-spin" class="overlay overlay-spin" style="display: none">
+      <div class="overlay-content spin-popup">
+        <div class="spin-reel" id="spin-reel">
+          <div class="spin-number" id="spin-number">?</div>
+        </div>
+        <div class="spin-label" id="spin-label">Đang quay...</div>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- OVERLAY: Loto Claim            -->
+    <!-- ============================== -->
+    <div id="overlay-loto" class="overlay" style="display: none">
+      <div class="overlay-content loto-announcement">
+        <div class="loto-emoji">🎉🎊🎯</div>
+        <h2 id="loto-player-name">---</h2>
+        <p>hô LÔ TÔ!</p>
+        <button class="btn btn-primary" id="btn-close-loto">OK</button>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- OVERLAY: Number Board (Host)   -->
+    <!-- ============================== -->
+    <div id="overlay-board" class="overlay" style="display: none">
+      <div class="overlay-content board-content">
+        <h3>📊 Bảng số (1-90)</h3>
+        <div class="number-board" id="number-board"></div>
+        <button class="btn btn-secondary" id="btn-close-board">Đóng</button>
+      </div>
+    </div>
+
+    <!-- ============================== -->
+    <!-- OVERLAY: Menu                  -->
+    <!-- ============================== -->
+    <div id="overlay-menu" class="overlay" style="display: none">
+      <div class="overlay-content menu-content">
+        <h3>⚙️ Menu</h3>
+        <button class="btn btn-danger" id="btn-leave">🚪 Rời phòng</button>
+        <button class="btn btn-secondary" id="btn-close-menu">Đóng</button>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast-container"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/app.js"></script>
+  </body>
+</html>
